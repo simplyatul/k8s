@@ -29,6 +29,7 @@ ToDo:
 
 import os, sys, time
 import shlex, subprocess
+import apiresources
 from configsnap import *
 from execute import log_cmd_output
 
@@ -88,7 +89,9 @@ def log_api_resources_w_namespace_scope():
         if r != '': save_resource_snap_per_ns(r)
 
 print('Starting snapshot')
-create_dir();
+create_dir()
+apiresources.apiresources_snap(dirName)
+
 list_namespaces()
 print('Taking snap of configs'); config_snap(dirName)
 

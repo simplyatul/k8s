@@ -3,7 +3,7 @@ MIT License
 Copyright (c) 2023 Atul Thosar (atulthosar@gmail.com)
 '''
 
-import shlex, subprocess
+import shlex, subprocess, constants
 
 def log_cmd_output(cmd, file):
         '''
@@ -15,3 +15,7 @@ def log_cmd_output(cmd, file):
 
         with open(file, 'a') as stdout_file:
             subprocess.run(shlex.split(cmd), stdout=stdout_file, stderr=stdout_file, text=True)
+
+def prepFile(dirName, fileName):
+     file = dirName + '/' + fileName + constants.FILE_EXT
+     return file
