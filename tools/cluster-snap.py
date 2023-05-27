@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 '''
 MIT License
 Copyright (c) 2023 Atul Thosar (atulthosar@gmail.com)
@@ -17,10 +18,19 @@ Script Usage:
         <resource name>.<namespace name>.txt
     - If resource is not namespaced:
         <resource name>.txt
+
+ToDo:
+- add pre-checks
+    - kubectl exists and working
+- arg to log output to stdout. Default is in file 
+- arg to pass resource list. Log only those resources. Default is all resources
+
 '''
 
 import os, sys, time
 import shlex, subprocess
+from configsnap import *
+from execute import log_cmd_output
 
 kubectl_global_options = ' -o wide'
 dirPrefix = 'cluster-snapshot-'
@@ -42,13 +52,6 @@ def list_namespaces():
     global all_nss
     all_nss = o.stdout.split("\n");
     # print(all_nss)
-
-def log_cmd_output(cmd, file):
-        with open(file, 'w') as f:
-            f.write('$ ' + cmd + '\n')
-
-        with open(file, 'a') as stdout_file:
-            subprocess.run(shlex.split(cmd), stdout=stdout_file, stderr=stdout_file, text=True)
 
 def save_resource_snap_per_ns(res_name):
     for ns in all_nss:
@@ -85,8 +88,15 @@ def log_api_resources_w_namespace_scope():
         if r != '': save_resource_snap_per_ns(r)
 
 print('Starting snapshot')
+create_dir();
 list_namespaces()
-create_dir(); print(dirName + ' directory created')
+print('Taking snap of configs'); config_snap(dirName)
+
+print('Taking snap of non namespaced resources')
 api_resources_wo_namespace_scope(); log_api_resources_wo_namespace_scope()
+
+print('Taking snap of namespaced resources')
 api_resources_w_namespace_scope(); log_api_resources_w_namespace_scope()
+
+print('Snapshot stored in ' + dirName)
 
