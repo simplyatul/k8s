@@ -19,6 +19,16 @@ Script Usage:
     - If resource is not namespaced:
         <resource name>.txt
 
+Dir Structure created by Script:
+cluster-snap-YYYY-MM-DD-HH-MM-SS
+	- configs
+	- non-ns-resources
+	- ns-resources
+		- default
+		- kube-public
+		- kube-system
+        - <other namespace directories...>
+
 ToDo:
 - add pre-checks
     - kubectl exists and working
