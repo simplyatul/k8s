@@ -32,21 +32,33 @@ import shlex, subprocess
 import apiresources
 from configsnap import *
 from execute import log_cmd_output
+from constants import *
 
 kubectl_global_options = ' -o wide'
 dirPrefix = 'cluster-snapshot-'
 
 def create_dir():
-    global dirName
-    dirName = dirPrefix + time.strftime("%Y-%m-%d-%H-%M-%S")
+    global baseDir
+    baseDir = dirPrefix + time.strftime("%Y-%m-%d-%H-%M-%S")
     try:
-        os.makedirs(dirName)
+        os.makedirs(baseDir)
+        
+        # Create single sub dir for non namespaced resources
+        os.makedirs(baseDir + SLASH + DIR_NON_NS)
+        
+        # Create sub dir for each namespace
+        for n in all_nss:
+            if n != '': os.makedirs(baseDir + SLASH + DIR_NS + SLASH + n)
+        
+        # Create sub dir for configs
+        os.makedirs(baseDir + SLASH + CONFIG_SUB_DIR)
+
     except FileExistsError as err:
-        print('Unable to create directory: ', dirName)
+        print('Unable to create directory: ', baseDir)
         print('Exception: ', err)
         sys.exit(1)
 
-def list_namespaces():
+def collect_nss():
     get_ns_cmd = 'kubectl get namespaces -o=jsonpath=\'{range.items[*]}{.metadata.name}{"\\n"}{end}\''
     o = subprocess.run(shlex.split(get_ns_cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     # print(o.stdout) # Returning extra empty line at the end
@@ -58,13 +70,13 @@ def save_resource_snap_per_ns(res_name):
     for ns in all_nss:
         if ns == '': return
         cmd = 'kubectl get ' + res_name + ' -n ' + ns + kubectl_global_options
-        file = dirName + '/' + res_name + '.' + ns + '.txt'
+        file = baseDir + SLASH + DIR_NS + SLASH + ns + SLASH + res_name + FILE_EXT
         # print(cmd, file)
         log_cmd_output(cmd, file)
 
 def save_resource_snap(res_name, ns='False'):
     cmd = 'kubectl get ' + res_name + kubectl_global_options
-    file = dirName + '/' + res_name + '.txt'
+    file = baseDir + constants.SLASH + constants.DIR_NON_NS + SLASH + res_name + constants.FILE_EXT
     log_cmd_output(cmd, file)
 
 def api_resources_w_namespace_scope():
@@ -73,7 +85,7 @@ def api_resources_w_namespace_scope():
     global apires_w_ns
     apires_w_ns = o.stdout.split("\n");
 
-def api_resources_wo_namespace_scope():
+def collect_api_resources_wo_namespace_scope():
     apires_cmd_wo_ns = 'kubectl api-resources -o=name --namespaced=false'
     o = subprocess.run(shlex.split(apires_cmd_wo_ns), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     global apires_wo_ns
@@ -89,17 +101,17 @@ def log_api_resources_w_namespace_scope():
         if r != '': save_resource_snap_per_ns(r)
 
 print('Starting snapshot')
+collect_nss()
 create_dir()
-apiresources.apiresources_snap(dirName)
 
-list_namespaces()
-print('Taking snap of configs'); config_snap(dirName)
+apiresources.apiresources_snap(baseDir)
+
+print('Taking snap of configs'); config_snap(baseDir)
 
 print('Taking snap of non namespaced resources')
-api_resources_wo_namespace_scope(); log_api_resources_wo_namespace_scope()
+collect_api_resources_wo_namespace_scope(); log_api_resources_wo_namespace_scope()
 
 print('Taking snap of namespaced resources')
 api_resources_w_namespace_scope(); log_api_resources_w_namespace_scope()
-
-print('Snapshot stored in ' + dirName)
+print('Snapshot stored in ' + baseDir)
 
