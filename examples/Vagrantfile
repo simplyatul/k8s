@@ -1,0 +1,42 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+ config.vm.box = "ubuntu/jammy64"
+
+
+ config.vm.network "public_network", bridge: ["wlp0s20f3"]
+ # My wireless LAN interface name. It provides internet connectivity
+ # Change as per your setup
+
+ config.vm.synced_folder "./shared-with-vm", "/shared-with-host"
+
+ config.vm.provider "virtualbox" do |vb|
+    # Display the VirtualBox GUI when booting the machine
+    # vb.gui = true
+ 
+    # Customize the amount of memory on the VM:
+    vb.memory = "2048"
+    vb.cpus = 2
+    vb.name = "k8s"
+  end
+
+  config.vm.provision "tools-0", type: "shell",
+    path: "https://raw.githubusercontent.com/simplyatul/vagrant-vms/main/tools-0-install.sh"
+
+  config.vm.provision "docker" do |d|
+  end
+
+  config.vm.provision "setaliases", type:"shell", inline: <<-SHELL
+    curl -LO "https://raw.githubusercontent.com/simplyatul/bin/master/setaliases.sh"
+    # following line not working...ToDo - Debug
+    echo "source ~/setaliases.sh" >> ~/.bashrc
+  SHELL
+
+  config.vm.provision "kubectl", type:"shell",
+    path: "https://raw.githubusercontent.com/simplyatul/vagrant-vms/main/kubectl-install.sh"
+
+  config.vm.provision "kind", type:"shell",
+    path: "https://raw.githubusercontent.com/simplyatul/vagrant-vms/main/kind-install.sh"
+
+end
